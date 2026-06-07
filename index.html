@@ -459,6 +459,7 @@
     z-index: 200;
   }
   .pwheel.open .pwheel-drop { opacity: 1; pointer-events: auto; transform: translateY(0); }
+  .pwheel.locked { opacity: 0.35; pointer-events: none; }
   .nucleus-opt {
     display: flex;
     flex-direction: column;
@@ -2611,7 +2612,9 @@ function neutronTick(now) {
     staticNeutronIY  = animParent.cy;
     // Pick the fission axis here — at impact — so the force viz panel doesn't
     // reveal the chosen direction during the neutron's flight.
-    staticFissAngle  = (Math.random() - 0.5) * Math.PI;
+    staticFissAngle  = isFirstFission
+      ? (Math.random() - 0.5) * 2 * (Math.PI / 18)   // ±10° — horizontal-ish first run
+      : (Math.random() - 0.5) * Math.PI;
     fissionBranch    = Math.floor(Math.random() * 2);
     consecutiveBounces = 0;
     document.getElementById('neutronSpeedWrap').classList.remove('bounce-warn');
@@ -3214,6 +3217,7 @@ document.getElementById('goBtn').addEventListener('click', () => {
   document.getElementById('scrubPct').textContent = '0';
   document.getElementById('replayBtn').disabled = false;
   document.getElementById('scrubReplayBtn').disabled = false;
+  document.getElementById('nucleusWheel').classList.add('locked');
   btn.textContent = '❙ ❙';
   btn.classList.add('running');
   neutronRAF = requestAnimationFrame(neutronTick);
@@ -3275,6 +3279,7 @@ function selectNucleus(key) {
   if (neutronState === 'idle' || neutronState === 'done') {
     currentSeed = Math.floor(Math.random() * 1e9);
     staticFissAngle = 0;
+    heatmapDirty = true;
     initNuclei();
     drawStaticFrame();
   }
@@ -3297,6 +3302,7 @@ document.getElementById('newBtn').addEventListener('click', (e) => {
   // Option-click routes through the wheel handler above, not here directly
   // Stage a fresh neutron — same as Stop but always available, does not require
   // the animation to currently be running.
+  document.getElementById('nucleusWheel').classList.remove('locked');
   resetPrerender();
   if (neutronRAF) { cancelAnimationFrame(neutronRAF); neutronRAF = null; }
   if (playbackRAF){ cancelAnimationFrame(playbackRAF); playbackRAF = null; }
@@ -3335,6 +3341,8 @@ document.getElementById('clearBtn').addEventListener('click', () => {
   maxRevealedFrac     = 0;
   staticFissAngle     = 0;   // force viz returns to horizontal until impact
   heatmapDirty        = true;
+  isFirstFission      = true;
+  document.getElementById('nucleusWheel').classList.remove('locked');
   document.getElementById('goBtn').textContent = '▶ GO';
   document.getElementById('goBtn').classList.remove('running');
   document.getElementById('replayBtn').disabled = true;
