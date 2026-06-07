@@ -1136,7 +1136,8 @@ window.addEventListener('resize', () => {
   resize();
   document.getElementById('scrubBar').classList.add('visible');
   heatmapDirty = true;
-  if (neutronRAF) { cancelAnimationFrame(neutronRAF); neutronRAF = null; }
+  if (neutronRAF)  { cancelAnimationFrame(neutronRAF);  neutronRAF  = null; }
+  if (playbackRAF) { cancelAnimationFrame(playbackRAF); playbackRAF = null; }
   neutronState = 'idle';
   document.getElementById('goBtn').textContent = '▶ GO';
   document.getElementById('goBtn').classList.remove('running');
@@ -3188,6 +3189,7 @@ document.getElementById('goBtn').addEventListener('click', () => {
 
   // Fresh start — choose fission axis before wobble so elongation and split
   // always go in the same direction.
+  if (neutronRAF) { cancelAnimationFrame(neutronRAF); neutronRAF = null; }
   resetPrerender();
   prerenderActive  = true;
   prerenderAllDone = false;
@@ -3478,7 +3480,8 @@ window.addEventListener('mousemove', e => {
     const { dir, sx, sy, ow, oh } = _fvResize;
     const dx = e.clientX - sx, dy = e.clientY - sy;
     let w = ow, h = oh;
-    if (dir.includes('w') || dir.includes('e')) w = Math.max(140, Math.min(canvas.width,  ow - dx));
+    if (dir.includes('w')) w = Math.max(140, Math.min(canvas.width, ow - dx));
+    if (dir.includes('e')) w = Math.max(140, Math.min(canvas.width, ow + dx));
     if (dir.includes('s')) h = Math.max(140, Math.min(canvas.height, oh + dy));
     if (dir.includes('n')) h = Math.max(140, Math.min(canvas.height, oh - dy));
     forceVizPanelEl.style.width  = w + 'px';
@@ -3535,8 +3538,12 @@ function pickNucleus(clientX, clientY) {
   const fvShift = (arrowMode > 0)
     ? -(forceVizPanelEl.offsetWidth + 20) / 2
     : 0;
+  const _tbH  = document.getElementById('toolbar').offsetHeight;
+  const _sbEl = document.getElementById('scrubBar');
+  const _sbH  = _sbEl.classList.contains('visible') ? _sbEl.offsetHeight : 0;
+  const _centerY = (_tbH + H - _sbH) / 2;
   const wx = (sx - W/2 - fvShift) / viewZoom + W/2;
-  const wy = (sy - H/2) / viewZoom + H/2;
+  const wy = (sy - _centerY) / viewZoom + H/2;
   const dx = wx - animParent.cx, dy = wy - animParent.cy;
   return dx*dx + dy*dy <= animParent.sphereR * animParent.sphereR;
 }
