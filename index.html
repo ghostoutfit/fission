@@ -3043,6 +3043,7 @@ let prerenderActive  = false;
 let prerenderPending = 0;
 let prerenderAllDone = false;
 let prerenderSlot    = 0;
+let _prerenderGen    = 0;    // incremented on reset; invalidates in-flight captures
 let playbackRAF      = null;
 let playbackStartT   = 0;
 let playbackStartRealT     = 0;
@@ -3054,11 +3055,13 @@ let _prerenderPauseStart   = 0;       // wall time when current pause began (0 =
 function captureFrame() {
   if (!prerenderActive) return;
   const slot = prerenderSlot++;
+  const gen  = _prerenderGen;
   prerenderFrames.push(null);
   prerenderFracs.push(currentScrubFrac);
   prerenderTimes.push(performance.now() - _prerenderPauseOffset);
   prerenderPending++;
   createImageBitmap(canvas).then(bmp => {
+    if (gen !== _prerenderGen) { bmp.close(); prerenderPending--; return; }
     prerenderFrames[slot] = bmp;
     prerenderPending--;
     if (prerenderAllDone && prerenderPending === 0) startPlayback();
@@ -3113,7 +3116,9 @@ function playbackLoop(now) {
 }
 
 function resetPrerender() {
+  _prerenderGen++;  // invalidate any in-flight createImageBitmap promises
   if (playbackRAF) { cancelAnimationFrame(playbackRAF); playbackRAF = null; }
+  for (const bmp of prerenderFrames) { if (bmp) bmp.close(); }
   prerenderFrames = []; prerenderFracs = []; prerenderTimes = [];
   prerenderActive = false; prerenderAllDone = false;
   prerenderPending = 0; prerenderSlot = 0;
@@ -3193,11 +3198,6 @@ document.getElementById('goBtn').addEventListener('click', () => {
   resetPrerender();
   prerenderActive  = true;
   prerenderAllDone = false;
-  prerenderPending = 0;
-  prerenderSlot    = 0;
-  prerenderFrames  = [];
-  prerenderFracs   = [];
-  prerenderTimes   = [];
 
   logAction('Pressed Go (FISSION)');
   heatmapDirty    = true;
