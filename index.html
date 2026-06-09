@@ -1074,12 +1074,16 @@ const hmCanvas    = document.createElement('canvas');
 const hmCtx       = hmCanvas.getContext('2d');
 const hmComposite = document.createElement('canvas');
 const hmcCtx      = hmComposite.getContext('2d');
+const hmSnap      = document.createElement('canvas');  // pre-transition snapshot for crossfade
+const hmSnapCtx   = hmSnap.getContext('2d');
 
 let hmW = 0, hmH = 0;
 let hmDataElec = null;
 let hmImgElec  = null;
 let heatmapDirty    = true;
 let hmFrameCounter  = 0;
+let _hmXfadeStartFrac = -1;   // frac at which phase-3 crossfade began; -1 = inactive
+const HM_XFADE_DURATION = 0.04;  // crossfade window in frac units (~200ms at normal speed)
 
 // ── Quality selector ──────────────────────────────────────────────────────────
 let _quality = 'hi-res';  // 'hi-res' | 'detailed' | 'simple'
@@ -1973,6 +1977,7 @@ function drawAnimContent(t) {
 
   // Phase 1: still
   if (t <= PH1_END) {
+    _hmXfadeStartFrac = -1;
     if (showElec) drawElectricHeatmap(animParent.particles, 0.5, 1.0, parentMask);
     if (!showParticles) drawCloudOutline(animParent.cx, animParent.cy, animParent.sphereR);
     if (showParticles) drawParticles(animParent.particles, 0.5);   // 2x jitter in static scene
@@ -1981,6 +1986,7 @@ function drawAnimContent(t) {
 
   // Phase 2: excited state
   if (t <= PH2_END) {
+    _hmXfadeStartFrac = -1;
     if (showElec) drawElectricHeatmap(animParent.particles, 0.5, 1.0, parentMask);
 
     // Energy-driven deformation: read the same values the graph displays so
@@ -2091,6 +2097,16 @@ function drawAnimContent(t) {
   }
 
   if (showElec && shootEase < 1) {
+    // Snapshot the parent heatmap (still in hmComposite from phase 2) on first entry
+    if (_quality !== 'simple' && _hmXfadeStartFrac < 0 &&
+        hmComposite.width === canvas.width && hmComposite.height === canvas.height) {
+      _hmXfadeStartFrac = currentScrubFrac;
+      hmSnap.width  = canvas.width;
+      hmSnap.height = canvas.height;
+      hmSnapCtx.clearRect(0, 0, hmSnap.width, hmSnap.height);
+      hmSnapCtx.drawImage(hmComposite, 0, 0);
+    }
+
     const sh1x = cx - grp1cx, sh1y = cy - grp1cy;
     const pos1c = pos1.map(p => ({ ...p, x: p.x + sh1x, y: p.y + sh1y }));
     const mask1 = [{ cx, cy, r: r1 + PARTICLE_RADIUS * 3.5, bleed: PARTICLE_RADIUS * 2.5 }];
@@ -2117,6 +2133,17 @@ function drawAnimContent(t) {
       bleed: PARTICLE_RADIUS * 5
     }], canvas.width);
     ctx.restore();
+
+    // Crossfade: fade out the pre-transition parent heatmap over the daughters heatmap
+    if (_quality !== 'simple' && _hmXfadeStartFrac >= 0) {
+      const xfadeAlpha = 1 - (currentScrubFrac - _hmXfadeStartFrac) / HM_XFADE_DURATION;
+      if (xfadeAlpha > 0) {
+        ctx.save();
+        ctx.globalAlpha = Math.min(1, xfadeAlpha);
+        ctx.drawImage(hmSnap, 0, 0);
+        ctx.restore();
+      }
+    }
   }
 
   if (!showParticles) drawFissionOutline(grp1cx, grp1cy, r1, grp2cx, grp2cy, r2);
@@ -3124,6 +3151,7 @@ function resetPrerender() {
   prerenderPending = 0; prerenderSlot = 0;
   pausedInPrerender = false;
   _prerenderPauseOffset = 0; _prerenderPauseStart = 0;
+  _hmXfadeStartFrac = -1;
 }
 
 document.getElementById('goBtn').addEventListener('click', () => {
