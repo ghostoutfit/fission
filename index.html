@@ -3176,7 +3176,10 @@ document.getElementById('goBtn').addEventListener('click', () => {
       neutronLast = 0;
     } else {
       const ff = (frac - NEUTRON_FRAC) / (1 - NEUTRON_FRAC);
-      staticFissT = PH1_END + ff * (ANIM_T_END - PH1_END);
+      // Use FISS_STOP_T (not ANIM_T_END) — matches the frac→t mapping in renderAtFrac.
+      // Using ANIM_T_END here over-computes staticFissT past FISS_STOP_T for frac > ~0.74,
+      // causing fissionTick to immediately fire its completion branch on the first tick.
+      staticFissT = Math.min(FISS_STOP_T, PH1_END + ff * (FISS_STOP_T - PH1_END));
       let elapsedAtPos;
       if (staticFissT <= PH2_END) {
         elapsedAtPos = (staticFissT - PH1_END) / (PH2_END - PH1_END) * SHAKE_DURATION;
@@ -3344,7 +3347,6 @@ document.getElementById('clearBtn').addEventListener('click', () => {
   maxRevealedFrac     = 0;
   staticFissAngle     = 0;   // force viz returns to horizontal until impact
   heatmapDirty        = true;
-  isFirstFission      = true;
   document.getElementById('nucleusWheel').classList.remove('locked');
   document.getElementById('goBtn').textContent = '▶ GO';
   document.getElementById('goBtn').classList.remove('running');
