@@ -983,7 +983,10 @@
       <div style="display:flex;flex-direction:column;gap:10px;justify-content:space-evenly;align-self:stretch">
         <div class="slider-group" id="playbackSpeedRow">
           <span class="slider-icon"><img src="images/Turtle.png" style="height:0.85em;vertical-align:middle;display:block"></span>
-          <input type="range" id="playbackSpeed" min="0.1" max="2.05" step="0.05" value="1.0">
+          <div style="position:relative;display:inline-flex;align-items:center;">
+            <input type="range" id="playbackSpeed" min="0.1" max="2.05" step="0.05" value="1.0">
+            <div id="pbSpeedDefaultTick" style="position:absolute;top:-3px;height:calc(100% + 6px);transform:translateX(-50%);width:2px;background:rgba(26,110,255,0.55);border-radius:1px;pointer-events:none;"></div>
+          </div>
           <span class="slider-icon"><img src="images/Rabbit.png" style="height:0.98em;vertical-align:middle;display:block;margin-top:-3px"></span>
         </div>
         <div class="slider-group" id="zoomSliderRow">
@@ -3402,7 +3405,23 @@ document.getElementById('qualitySelect').addEventListener('change', function() {
 });
 
 let _pbSpeedLogTimer = null;
+const PBSPEED_DEFAULT = 1.0;
+const PBSPEED_SNAP = 0.10;
+(function _posPbSpeedTick() {
+  const tick = document.getElementById('pbSpeedDefaultTick');
+  const sl   = document.getElementById('playbackSpeed');
+  if (!tick || !sl) return;
+  const pct = (PBSPEED_DEFAULT - +sl.min) / (+sl.max - +sl.min);
+  const thumbR = 10;
+  const w = sl.offsetWidth || 80;
+  const xPx = thumbR + pct * (w - 2 * thumbR);
+  tick.style.left = (xPx / w * 100).toFixed(2) + '%';
+})();
 document.getElementById('playbackSpeed').addEventListener('input', function() {
+  let val = parseFloat(this.value);
+  if (Math.abs(val - PBSPEED_DEFAULT) <= PBSPEED_SNAP) {
+    this.value = String(PBSPEED_DEFAULT);
+  }
   clearTimeout(_pbSpeedLogTimer);
   _pbSpeedLogTimer = setTimeout(() => logAction('Set playback speed to ' + parseFloat(this.value).toFixed(2) + '×'), 400);
 });
