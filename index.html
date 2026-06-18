@@ -2580,10 +2580,12 @@ function updatePhaseTimeline() {
   after.style.display  = rev >= 0.742        ? '' : 'none';
   // Before label only shows once the full timeline is built
   before.style.fontSize = rev >= 0.742 ? '' : '0px';
-  // Highlight: active phase is full opacity, revealed-but-past phases are dimmed
-  before.style.opacity = phase === 'before' ? '1' : '0.35';
-  during.style.opacity = phase === 'during' ? '1' : '0.35';
-  after.style.opacity  = phase === 'after'  ? '1' : '0.35';
+  // Highlight: skip opacity changes during replay so the labels don't flicker
+  if (!playbackRAF) {
+    before.style.opacity = phase === 'before' ? '1' : '0.35';
+    during.style.opacity = phase === 'during' ? '1' : '0.35';
+    after.style.opacity  = phase === 'after'  ? '1' : '0.35';
+  }
 }
 
 function drawStaticFrame() {
