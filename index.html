@@ -2006,7 +2006,7 @@ function drawAnimContent(t) {
     const wobble     = DEFORM_MAX * normWobble * stableMult;
     const scaleAlong = 1 + wobble;
     const scalePerp  = 1 / (1 + wobble * 0.7);
-    const jitterS    = 0.85 * Math.min(1, ke / 0.45);  // jitter tracks KE exactly
+    const jitterS    = 0.935 * Math.min(1, ke / 0.45);  // jitter tracks KE exactly
 
     // ph2Frac only for the nucleus-center outAmp ramp at the very start of phase 2
     const ph2Frac = (t - PH1_END) / (PH2_END - PH1_END);
