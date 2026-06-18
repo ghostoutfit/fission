@@ -3248,6 +3248,7 @@ document.getElementById('goBtn').addEventListener('click', () => {
   neutronLast  = 0;
   egCtx.clearRect(0, 0, egCanvas.width, egCanvas.height);
   maxRevealedFrac = 0;
+  updatePhaseTimeline();
   egZoomStart = 0; egZoomEnd = 1;  // will be narrowed to 0.70 if stable, once wobbleMode is known at impact
   document.getElementById('scrubSlider').max = 1000;
   document.getElementById('scrubSlider').disabled = false;
